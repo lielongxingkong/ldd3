@@ -4,7 +4,12 @@
 *~
 core
 .depend
-.*.cmd 
+*.cmd 
 *.ko
+*.ko.cmd
+*.ko.unsigned
+*.ko.unsigned.cmd
 *.mod.c
 .tmp_versions
+modules.*
+Module.*
