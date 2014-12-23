@@ -14,7 +14,9 @@
  */
 
 #include <linux/ioctl.h>
+#include <linux/fs.h>
 #include <linux/cdev.h>
+#include <linux/semaphore.h>
 
 /*
  * Macros to help debugging
