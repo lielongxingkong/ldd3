@@ -15,7 +15,6 @@
  * $Id: _mmap.c.in,v 1.13 2004/10/18 18:07:36 corbet Exp $
  */
 
-#include <linux/config.h>
 #include <linux/module.h>
 
 #include <linux/mm.h>		/* everything */
@@ -57,16 +56,16 @@ void scullv_vma_close(struct vm_area_struct *vma)
  * is individually decreased, and would drop to 0.
  */
 
-struct page *scullv_vma_nopage(struct vm_area_struct *vma,
-                                unsigned long address, int *type)
+int scullv_vma_nopage(struct vm_area_struct *vma,
+                                struct vm_fault *vmf)
 {
 	unsigned long offset;
 	struct scullv_dev *ptr, *dev = vma->vm_private_data;
-	struct page *page = NOPAGE_SIGBUS;
+	struct page *page = NULL;
 	void *pageptr = NULL; /* default to "missing" */
 
 	down(&dev->sem);
-	offset = (address - vma->vm_start) + (vma->vm_pgoff << PAGE_SHIFT);
+	offset = ((unsigned long)vmf->virtual_address - vma->vm_start) + (vma->vm_pgoff << PAGE_SHIFT);
 	if (offset >= dev->size) goto out; /* out of range */
 
 	/*
@@ -91,11 +90,10 @@ struct page *scullv_vma_nopage(struct vm_area_struct *vma,
 
 	/* got it, now increment the count */
 	get_page(page);
-	if (type)
-		*type = VM_FAULT_MINOR;
   out:
 	up(&dev->sem);
-	return page;
+	vmf->page = page;
+	return 0;
 }
 
 
@@ -103,7 +101,7 @@ struct page *scullv_vma_nopage(struct vm_area_struct *vma,
 struct vm_operations_struct scullv_vm_ops = {
 	.open =     scullv_vma_open,
 	.close =    scullv_vma_close,
-	.nopage =   scullv_vma_nopage,
+	.fault =   scullv_vma_nopage,
 };
 
 
