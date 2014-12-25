@@ -39,7 +39,7 @@ MODULE_LICENSE("Dual BSD/GPL");
 /*
  * Open the device; in fact, there's nothing to do here.
  */
-static int simple_open (struct inode *inode, struct file *filp)
+int simple_open (struct inode *inode, struct file *filp)
 {
 	return 0;
 }
