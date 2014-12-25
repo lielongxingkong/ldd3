@@ -20,10 +20,15 @@ static unsigned char skel_get_revision(struct pci_dev *dev)
 
 static int probe(struct pci_dev *dev, const struct pci_device_id *id)
 {
+	int ret = -ENODEV;
 	/* Do probing type stuff here.  
 	 * Like calling request_region();
 	 */
-	pci_enable_device(dev);
+	ret = pci_enable_device(dev);
+	if (ret) {
+		pci_disable_device(dev);
+		return ret;
+	}
 	
 	if (skel_get_revision(dev) == 0x42)
 		return -ENODEV;
