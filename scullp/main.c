@@ -405,7 +405,7 @@ struct async_work {
 /*
  * "Complete" an asynchronous operation.
  */
-static void scullp_do_deferred_op(void *p)
+static void scullp_do_deferred_op(struct work_struct *work)
 {
 	struct async_work *stuff = container_of(to_delayed_work(work), struct async_work, work);
 	aio_complete(stuff->iocb, stuff->result, 0);
@@ -413,21 +413,22 @@ static void scullp_do_deferred_op(void *p)
 }
 
 
-static int scullp_defer_op(int write, struct kiocb *iocb, char __user *buf,
+static int scullp_defer_op(int write, struct kiocb *iocb, const struct iovec *iovec,
 		size_t count, loff_t pos)
 {
 	struct async_work *stuff;
-	int result;
+	int result = 0, i;
 
 	/* Copy now while we can access the buffer */
-	if (write)
-		result = scullp_write(iocb->ki_filp, buf, count, &pos);
-	else
-		result = scullp_read(iocb->ki_filp, buf, count, &pos);
-
-	/* If this is a synchronous IOCB, we return our status now. */
-	if (is_sync_kiocb(iocb))
-		return result;
+	for (i = 0; i < count; i++){
+		if (write)
+			result += scullp_write(iocb->ki_filp, iovec->iov_base, iovec->iov_len, &pos);
+		else
+			result += scullp_read(iocb->ki_filp, iovec->iov_base, iovec->iov_len, &pos);
+		/* If this is a synchronous IOCB, we return our status now. */
+		if (is_sync_kiocb(iocb))
+			return result;
+	}
 
 	/* Otherwise defer the completion for a few milliseconds. */
 	stuff = kmalloc (sizeof (*stuff), GFP_KERNEL);
@@ -441,16 +442,16 @@ static int scullp_defer_op(int write, struct kiocb *iocb, char __user *buf,
 }
 
 
-static ssize_t scullp_aio_read(struct kiocb *iocb, char __user *buf, size_t count,
+static ssize_t scullp_aio_read(struct kiocb *iocb, const struct iovec *iovec, size_t count,
 		loff_t pos)
 {
-	return scullp_defer_op(0, iocb, buf, count, pos);
+	return scullp_defer_op(0, iocb, iovec, count, pos);
 }
 
-static ssize_t scullp_aio_write(struct kiocb *iocb, const char __user *buf,
+static ssize_t scullp_aio_write(struct kiocb *iocb, const struct iovec *iovec,
 		size_t count, loff_t pos)
 {
-	return scullp_defer_op(1, iocb, (char __user *) buf, count, pos);
+	return scullp_defer_op(1, iocb, iovec, count, pos);
 }
 
 
