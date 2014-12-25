@@ -1,7 +1,7 @@
 # Comment/uncomment the following line to disable/enable debugging
 #DEBUG = y
 
-CFLAGS += -O2 -I..
+EXTRA_CFLAGS += -O2 -I..
 
 ifneq ($(KERNELRELEASE),)
 # call from kernel build system
@@ -20,7 +20,7 @@ endif
 
 
 clean:
-	rm -rf *.o *~ core .depend .*.cmd *.ko *.mod.c .tmp_versions
+	rm -rf *.o *~ core .depend .*.cmd *.ko *.ko.unsigned *.mod.c .tmp_versions Module.symvers modules.order
 
 depend .depend dep:
 	$(CC) $(CFLAGS) -M *.c > .depend
