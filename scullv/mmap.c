@@ -43,7 +43,7 @@ void scullv_vma_close(struct vm_area_struct *vma)
 }
 
 /*
- * The nopage method: the core of the file. It retrieves the
+ * The fault method: the core of the file. It retrieves the
  * page required from the scullv device and returns it to the
  * user. The count for the page must be incremented, because
  * it is automatically decremented at page unmap.
@@ -55,7 +55,7 @@ void scullv_vma_close(struct vm_area_struct *vma)
  * is individually decreased, and would drop to 0.
  */
 
-int scullv_vma_nopage(struct vm_area_struct *vma,
+int scullv_vma_fault(struct vm_area_struct *vma,
                                 struct vm_fault *vmf)
 {
 	unsigned long offset;
@@ -65,7 +65,11 @@ int scullv_vma_nopage(struct vm_area_struct *vma,
 
 	down(&dev->sem);
 	offset = ((unsigned long)vmf->virtual_address - vma->vm_start) + (vma->vm_pgoff << PAGE_SHIFT);
-	if (offset >= dev->size) goto out; /* out of range */
+	if (offset >= dev->size) {
+		/* out of range */
+		up(&dev->sem);
+		return VM_FAULT_SIGBUS;
+	}
 
 	/*
 	 * Now retrieve the scullv device from the list,then the page.
@@ -78,7 +82,11 @@ int scullv_vma_nopage(struct vm_area_struct *vma,
 		offset -= dev->qset;
 	}
 	if (ptr && ptr->data) pageptr = ptr->data[offset];
-	if (!pageptr) goto out; /* hole or end-of-file */
+	if (!pageptr) {
+		/* hole or end-of-file */
+		up(&dev->sem);
+		return VM_FAULT_SIGBUS;
+	}
 
 	/*
 	 * After scullv lookup, "page" is now the address of the page
@@ -89,9 +97,8 @@ int scullv_vma_nopage(struct vm_area_struct *vma,
 
 	/* got it, now increment the count */
 	get_page(page);
-  out:
-	up(&dev->sem);
 	vmf->page = page;
+	up(&dev->sem);
 	return 0;
 }
 
@@ -100,7 +107,7 @@ int scullv_vma_nopage(struct vm_area_struct *vma,
 struct vm_operations_struct scullv_vm_ops = {
 	.open =     scullv_vma_open,
 	.close =    scullv_vma_close,
-	.fault =   scullv_vma_nopage,
+	.fault =   scullv_vma_fault,
 };
 
 
