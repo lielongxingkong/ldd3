@@ -399,7 +399,7 @@ loff_t scullp_llseek (struct file *filp, loff_t off, int whence)
 struct async_work {
 	struct kiocb *iocb;
 	int result;
-	struct work_struct work;
+	struct delayed_work work;
 };
 
 /*
@@ -407,7 +407,7 @@ struct async_work {
  */
 static void scullp_do_deferred_op(void *p)
 {
-	struct async_work *stuff = (struct async_work *) p;
+	struct async_work *stuff = container_of(to_delayed_work(work), struct async_work, work);
 	aio_complete(stuff->iocb, stuff->result, 0);
 	kfree(stuff);
 }
@@ -435,7 +435,7 @@ static int scullp_defer_op(int write, struct kiocb *iocb, char __user *buf,
 		return result; /* No memory, just complete now */
 	stuff->iocb = iocb;
 	stuff->result = result;
-	INIT_WORK(&stuff->work, scullp_do_deferred_op, stuff);
+	INIT_DELAYED_WORK(&stuff->work, scullp_do_deferred_op);
 	schedule_delayed_work(&stuff->work, HZ/100);
 	return -EIOCBQUEUED;
 }
