@@ -9,7 +9,7 @@ else
   DEBFLAGS = -O2
 endif
 
-CFLAGS += $(DEBFLAGS) -I$(LDDINC)
+EXTRA_CFLAGS += $(DEBFLAGS) -I$(LDDINC)
 
 TARGET = scullp
 
@@ -35,7 +35,7 @@ install:
 	install -c $(TARGET).o $(INSTALLDIR)
 
 clean:
-	rm -rf *.o *~ core .depend .*.cmd *.ko *.mod.c .tmp_versions
+	rm -rf *.o *~ core .depend .*.cmd *.ko *.ko.unsigned *.mod.c .tmp_versions Module.symvers modules.order
 
 
 depend .depend dep:
