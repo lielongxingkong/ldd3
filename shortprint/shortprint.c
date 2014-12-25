@@ -15,7 +15,6 @@
  *
  * $Id: shortprint.c,v 1.4 2004/09/26 08:01:04 gregkh Exp $
  */
-#include <linux/config.h>
 #include <linux/module.h>
 #include <linux/moduleparam.h>
 
@@ -32,7 +31,7 @@
 #include <linux/poll.h>
 
 #include <asm/io.h>
-#include <asm/semaphore.h>
+#include <linux/semaphore.h>
 #include <asm/atomic.h>
 
 #include "shortprint.h"
