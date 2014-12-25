@@ -45,7 +45,7 @@ void scullp_vma_close(struct vm_area_struct *vma)
 }
 
 /*
- * The nopage method: the core of the file. It retrieves the
+ * The fault method: the core of the file. It retrieves the
  * page required from the scullp device and returns it to the
  * user. The count for the page must be incremented, because
  * it is automatically decremented at page unmap.
@@ -57,17 +57,20 @@ void scullp_vma_close(struct vm_area_struct *vma)
  * is individually decreased, and would drop to 0.
  */
 
-struct page *scullp_vma_nopage(struct vm_area_struct *vma,
-                                unsigned long address, int *type)
+int scullp_vma_fault(struct vm_area_struct *vma, struct vm_fault *vmf)
 {
 	unsigned long offset;
 	struct scullp_dev *ptr, *dev = vma->vm_private_data;
-	struct page *page = NOPAGE_SIGBUS;
+	struct page *page;
 	void *pageptr = NULL; /* default to "missing" */
 
 	down(&dev->sem);
-	offset = (address - vma->vm_start) + (vma->vm_pgoff << PAGE_SHIFT);
-	if (offset >= dev->size) goto out; /* out of range */
+	offset = ((unsigned long)vmf->virtual_address - vma->vm_start) + (vma->vm_pgoff << PAGE_SHIFT);
+	if (offset >= dev->size) {
+		/* out of range */
+		up(&dev->sem);
+		return VM_FAULT_SIGBUS;
+	}
 
 	/*
 	 * Now retrieve the scullp device from the list,then the page.
@@ -80,16 +83,18 @@ struct page *scullp_vma_nopage(struct vm_area_struct *vma,
 		offset -= dev->qset;
 	}
 	if (ptr && ptr->data) pageptr = ptr->data[offset];
-	if (!pageptr) goto out; /* hole or end-of-file */
+	if (!pageptr) {
+		/* hole or end-of-file */
+		up(&dev->sem);
+		return VM_FAULT_SIGBUS;
+	}
 	page = virt_to_page(pageptr);
 
 	/* got it, now increment the count */
 	get_page(page);
-	if (type)
-		*type = VM_FAULT_MINOR;
-  out:
+	vmf->page = page;
 	up(&dev->sem);
-	return page;
+	return 0;
 }
 
 
@@ -97,7 +102,7 @@ struct page *scullp_vma_nopage(struct vm_area_struct *vma,
 struct vm_operations_struct scullp_vm_ops = {
 	.open =     scullp_vma_open,
 	.close =    scullp_vma_close,
-	.nopage =   scullp_vma_nopage,
+	.fault =   scullp_vma_fault,
 };
 
 
