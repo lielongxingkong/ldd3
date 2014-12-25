@@ -19,7 +19,6 @@
 
 #include <linux/mm.h>		/* everything */
 #include <linux/errno.h>	/* error codes */
-#include <asm/pgtable.h>
 
 #include "scullv.h"		/* local definitions */
 
