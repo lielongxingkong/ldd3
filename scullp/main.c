@@ -514,8 +514,6 @@ static void scullp_setup_cdev(struct scullp_dev *dev, int index)
 	int err, devno = MKDEV(scullp_major, index);
     
 	cdev_init(&dev->cdev, &scullp_fops);
-	dev->cdev.owner = THIS_MODULE;
-	dev->cdev.ops = &scullp_fops;
 	err = cdev_add (&dev->cdev, devno, 1);
 	/* Fail gracefully if need be */
 	if (err)
