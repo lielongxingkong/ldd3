@@ -86,6 +86,18 @@ ssize_t silly_read(struct file *filp, char __user *buf, size_t count, loff_t *f_
 		count = ISA_MAX - isa_addr;
 
 	/*
+	    max count - +-------+ ISA_MAX (0x10000)
+			|	|
+		count-> |	|
+			|	|
+		      - +-------+ isa_addr
+			|	|
+		  f_pos	|	|
+			|	|
+		      - +-------+ ISA_BASE (0xA000)
+	*/
+
+	/*
 	 * too big an f_pos (caused by a malicious lseek())
 	 * would result in a negative count
 	 */
