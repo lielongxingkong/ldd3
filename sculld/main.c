@@ -541,14 +541,16 @@ static ssize_t sculld_show_dev(struct device *ddev, char *buf)
 
 static DEVICE_ATTR(dev, S_IRUGO, sculld_show_dev, NULL);
 
-static void sculld_register_dev(struct sculld_dev *dev, int index)
+static int sculld_register_dev(struct sculld_dev *dev, int index)
 {
+	int err;
 	sprintf(dev->devname, "sculld%d", index);
 	dev->ldev.name = dev->devname;
 	dev->ldev.driver = &sculld_driver;
 	dev->ldev.dev.driver_data = dev;
 	register_ldd_device(&dev->ldev);
-	device_create_file(&dev->ldev.dev, &dev_attr_dev);
+	err = device_create_file(&dev->ldev.dev, &dev_attr_dev);
+	return err;
 }
 
 
