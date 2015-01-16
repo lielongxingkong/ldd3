@@ -48,7 +48,7 @@ int scullc_trim(struct scullc_dev *dev);
 void scullc_cleanup(void);
 
 /* declare one cache pointer: use it for all devices */
-kmem_cache_t *scullc_cache;
+struct kmem_cache *scullc_cache;
 
 
 
@@ -557,7 +557,7 @@ int scullc_init(void)
 	}
 
 	scullc_cache = kmem_cache_create("scullc", scullc_quantum,
-			0, SLAB_HWCACHE_ALIGN, NULL, NULL); /* no ctor/dtor */
+			SLAB_HWCACHE_ALIGN, 0, NULL); /* no ctor/dtor */
 	if (!scullc_cache) {
 		scullc_cleanup();
 		return -ENOMEM;
