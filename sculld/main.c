@@ -422,17 +422,18 @@ static void sculld_do_deferred_op(struct work_struct *work)
 }
 
 
-static int sculld_defer_op(int write, struct kiocb *iocb, char __user *buf,
+static int sculld_defer_op(int write, struct kiocb *iocb, const struct iovec *iovec,
 		size_t count, loff_t pos)
 {
 	struct async_work *stuff;
-	int result;
+	int i, result = 0;
 
 	/* Copy now while we can access the buffer */
-	if (write)
-		result = sculld_write(iocb->ki_filp, buf, count, &pos);
-	else
-		result = sculld_read(iocb->ki_filp, buf, count, &pos);
+	for (i = 0; i < count; i++)
+		if (write)
+			result = sculld_write(iocb->ki_filp, iovec[i].iov_base, iovec[i].iov_len, &pos);
+		else
+			result = sculld_read(iocb->ki_filp, iovec[i].iov_base, iovec[i].iov_len, &pos);
 
 	/* If this is a synchronous IOCB, we return our status now. */
 	if (is_sync_kiocb(iocb))
@@ -450,16 +451,16 @@ static int sculld_defer_op(int write, struct kiocb *iocb, char __user *buf,
 }
 
 
-static ssize_t sculld_aio_read(struct kiocb *iocb, char __user *buf, size_t count,
+static ssize_t sculld_aio_read(struct kiocb *iocb, const struct iovec *iovec, size_t count,
 		loff_t pos)
 {
-	return sculld_defer_op(0, iocb, buf, count, pos);
+	return sculld_defer_op(0, iocb, iovec, count, pos);
 }
 
-static ssize_t sculld_aio_write(struct kiocb *iocb, const char __user *buf,
+static ssize_t sculld_aio_write(struct kiocb *iocb, const struct iovec *iovec,
 		size_t count, loff_t pos)
 {
-	return sculld_defer_op(1, iocb, (char __user *) buf, count, pos);
+	return sculld_defer_op(1, iocb, iovec, count, pos);
 }
 
 
