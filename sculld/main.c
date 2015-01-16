@@ -532,9 +532,9 @@ static void sculld_setup_cdev(struct sculld_dev *dev, int index)
 		printk(KERN_NOTICE "Error %d adding scull%d", err, index);
 }
 
-static ssize_t sculld_show_dev(struct device *ddev, char *buf)
+static ssize_t sculld_show_dev(struct device *ddev, struct device_attribute *attr, char *buf)
 {
-	struct sculld_dev *dev = ddev->driver_data;
+	struct sculld_dev *dev = ddev->platform_data;
 
 	return print_dev_t(buf, dev->cdev.dev);
 }
@@ -547,7 +547,7 @@ static int sculld_register_dev(struct sculld_dev *dev, int index)
 	sprintf(dev->devname, "sculld%d", index);
 	dev->ldev.name = dev->devname;
 	dev->ldev.driver = &sculld_driver;
-	dev->ldev.dev.driver_data = dev;
+	dev->ldev.dev.platform_data = dev;
 	register_ldd_device(&dev->ldev);
 	err = device_create_file(&dev->ldev.dev, &dev_attr_dev);
 	return err;
